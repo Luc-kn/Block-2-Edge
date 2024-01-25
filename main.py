@@ -1,77 +1,114 @@
 import tkinter as tk
+import json
+import os
+import random
 from tkinter import messagebox
 
-signup_window = None
-signup_username_entry = None
-signup_password_entry = None
+def create_json_file_if_not_exists():
+    if not os.path.exists('user_data.json'):
+        with open('user_data.json', 'w') as file:
+            json.dump([], file)
 
-# Create a function to check the credentials
+def load_user_data():
+    try:
+        with open('user_data.json', 'r') as file:
+            data = json.load(file)
+    except json.decoder.JSONDecodeError:
+        data = []
+
+    return data
+
+def generate_random_event():
+    events = ["Attend a seminar", "Meet with a mentor", "Complete a coding challenge", "Network with professionals", "Participate in a hackathon"]
+    return random.choice(events)
+
 def check_credentials():
     username = username_entry.get()
     password = password_entry.get()
 
-    # You can replace this logic with your own authentication method
-    if username == "user" and password == "password":
-        messagebox.showinfo("Login successful", "Welcome, " + username + "!")
-        root.withdraw()  # Close the login page upon successful login
-    else:
-        messagebox.showerror("Login failed", "Invalid username or password")
+    data = load_user_data()
 
-# Create a function to handle sign up button click
+    for user_data in data:
+        if user_data["username"] == username and user_data["password"] == password:
+            messagebox.showinfo("Login successful", "Welcome, " + username + "!")
+            open_main_page(username)
+            return
+
+    messagebox.showerror("Login failed", "Invalid username or password")
+
 def open_signup():
-    global signup_window, signup_username_entry, signup_password_entry
-    global signup_username_entry
-    global signup_password_entry
-    
-    # Create <link>StringVar</link> variables to store the input for sign up
-    signup_username = tk.StringVar()
-    signup_password = tk.StringVar()
-    
-    signup_username_entry = tk.Entry(signup_window, textvariable=signup_username)
+    root.withdraw()
+    signup_window = tk.Toplevel()
+    signup_window.title("Sign Up")
+    signup_window.geometry("400x300")
+
+    signup_username_label = tk.Label(signup_window, text="New Username")
+    signup_username_label.pack()
+    signup_username_entry = tk.Entry(signup_window)
     signup_username_entry.pack()
 
-    signup_password_entry = tk.Entry(signup_window, show="*", textvariable=signup_password)
+    signup_password_label = tk.Label(signup_window, text="New Password")
+    signup_password_label.pack()
+    signup_password_entry = tk.Entry(signup_window, show="*")
     signup_password_entry.pack()
 
-    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry, signup_password_entry))
+    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), signup_window))
     signup_button.pack()
 
+def perform_signup(new_username, new_password, signup_window):
+    new_user_data = {"username": new_username, "password": new_password}
 
-# Create a function to handle sign up button click in the sign up window
-def perform_signup(username_entry, password_entry):
-    new_username = username_entry.get()
-    new_password = password_entry.get()
-    
-    new_username = signup_username_entry.get()
-    new_password = signup_password_entry.get
+    data = load_user_data()
+    data.append(new_user_data)
 
-    # You can add your sign up logic here, such as adding the new user to a database
+    with open('user_data.json', 'w') as file:
+        json.dump(data, file)
+
     messagebox.showinfo("Sign Up successful", "Welcome, " + new_username + "!")
-    root.deiconify()  # Show the login page after sign-up is successful
+    signup_window.destroy()
+    root.deiconify()
 
-# Create the main window and set its size
-root = tk.Tk()
-root.title("Login")
-root.geometry("400x200")  # Set the initial size of the window
+def open_main_page(username):
+    root.withdraw()
+    main_page = tk.Toplevel()
+    main_page.title("Main Page")
+    main_page.geometry("400x200")
 
-# Create and pack the username and password input fields
-username_label = tk.Label(root, text="Username")
-username_label.pack()
-username_entry = tk.Entry(root)
-username_entry.pack()
+    welcome_label = tk.Label(main_page, text="Welcome, " + username + "!")
+    welcome_label.pack()
 
-password_label = tk.Label(root, text="Password")
-password_label.pack()
-password_entry = tk.Entry(root, show="*")
-password_entry.pack()
+    # Display a random event on the main page
+    event_label = tk.Label(main_page, text="Today's Event: " + generate_random_event())
+    event_label.pack()
 
-# Create and pack the login button
-login_button = tk.Button(root, text="Login", command=check_credentials)
-login_button.pack()
+    # Add additional components or functionality for the main page here
 
-# Create and pack the sign up button
-signup_button = tk.Button(root, text="Sign Up", command=open_signup)
-signup_button.pack()
+def main():
+    create_json_file_if_not_exists()
 
-# Run the main loop
-root.mainloop()
+    global root
+    root = tk.Tk()
+    root.title("Login")
+    root.geometry("400x200")
+
+    global username_entry, password_entry
+    username_label = tk.Label(root, text="Username")
+    username_label.pack()
+    username_entry = tk.Entry(root)
+    username_entry.pack()
+
+    password_label = tk.Label(root, text="Password")
+    password_label.pack()
+    password_entry = tk.Entry(root, show="*")
+    password_entry.pack()
+
+    login_button = tk.Button(root, text="Login", command=check_credentials)
+    login_button.pack()
+
+    signup_button = tk.Button(root, text="Sign Up", command=open_signup)
+    signup_button.pack()
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
