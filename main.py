@@ -9,13 +9,13 @@ def check_credentials():
     # You can replace this logic with your own authentication method
     if username == "user" and password == "password":
         messagebox.showinfo("Login successful", "Welcome, " + username + "!")
-        <link>root</link>.withdraw()  # Close the login page upon successful login
+        root.withdraw()  # Close the login page upon successful login
     else:
         messagebox.showerror("Login failed", "Invalid username or password")
 
 # Create a function to handle sign up button click
 def open_signup():
-    <link>root</link>.withdraw()  # Close the login page upon opening the sign-up page
+    root.withdraw()  # Close the login page upon opening the sign-up page
     signup_window = tk.Toplevel()
     signup_window.title("Sign Up")
     signup_window.geometry("400x300")  # Set the size of the sign-up window
