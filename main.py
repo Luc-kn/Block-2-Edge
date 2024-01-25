@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 
+signup_window = None
+signup_username_entry = None
+signup_password_entry = None
+
 # Create a function to check the credentials
 def check_credentials():
     username = username_entry.get()
@@ -15,30 +19,31 @@ def check_credentials():
 
 # Create a function to handle sign up button click
 def open_signup():
-    root.withdraw()  # Close the login page upon opening the sign-up page
-    signup_window = tk.Toplevel()
-    signup_window.title("Sign Up")
-    signup_window.geometry("400x300")  # Set the size of the sign-up window
-
-    # Create and pack the username and password input fields for sign up
-    signup_username_label = tk.Label(signup_window, text="New Username")
-    signup_username_label.pack()
-    signup_username_entry = tk.Entry(signup_window)
+    global signup_window, signup_username_entry, signup_password_entry
+    global signup_username_entry
+    global signup_password_entry
+    
+    # Create <link>StringVar</link> variables to store the input for sign up
+    signup_username = tk.StringVar()
+    signup_password = tk.StringVar()
+    
+    signup_username_entry = tk.Entry(signup_window, textvariable=signup_username)
     signup_username_entry.pack()
 
-    signup_password_label = tk.Label(signup_window, text="New Password")
-    signup_password_label.pack()
-    signup_password_entry = tk.Entry(signup_window, show="*")
+    signup_password_entry = tk.Entry(signup_window, show="*", textvariable=signup_password)
     signup_password_entry.pack()
 
-    # Create and pack the sign up button for the sign up window
-    signup_button = tk.Button(signup_window, text="Sign Up", command=perform_signup)
+    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry, signup_password_entry))
     signup_button.pack()
 
+
 # Create a function to handle sign up button click in the sign up window
-def perform_signup():
+def perform_signup(username_entry, password_entry):
+    new_username = username_entry.get()
+    new_password = password_entry.get()
+    
     new_username = signup_username_entry.get()
-    new_password = signup_password_entry.get()
+    new_password = signup_password_entry.get
 
     # You can add your sign up logic here, such as adding the new user to a database
     messagebox.showinfo("Sign Up successful", "Welcome, " + new_username + "!")
