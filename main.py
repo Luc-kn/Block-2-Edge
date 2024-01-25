@@ -1,7 +1,6 @@
 import tkinter as tk
 import json
 import os
-import random
 from tkinter import messagebox
 
 def create_json_file_if_not_exists():
@@ -17,10 +16,6 @@ def load_user_data():
         data = []
 
     return data
-
-def generate_random_event():
-    events = ["Attend a seminar", "Meet with a mentor", "Complete a coding challenge", "Network with professionals", "Participate in a hackathon"]
-    return random.choice(events)
 
 def check_credentials():
     username = username_entry.get()
@@ -41,19 +36,23 @@ def open_signup():
     signup_window = tk.Toplevel()
     signup_window.title("Sign Up")
     signup_window.geometry("400x300")
+    signup_window.configure(bg="black")  
 
-    signup_username_label = tk.Label(signup_window, text="New Username")
+    signup_username_label = tk.Label(signup_window, text="New Username", bg="black", fg="white")  
     signup_username_label.pack()
-    signup_username_entry = tk.Entry(signup_window)
+    signup_username_entry = tk.Entry(signup_window, bg="black", fg="white")  
     signup_username_entry.pack()
 
-    signup_password_label = tk.Label(signup_window, text="New Password")
+    signup_password_label = tk.Label(signup_window, text="New Password", bg="black", fg="white")  
     signup_password_label.pack()
-    signup_password_entry = tk.Entry(signup_window, show="*")
+    signup_password_entry = tk.Entry(signup_window, show="*", bg="black", fg="white")  
     signup_password_entry.pack()
 
-    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), signup_window))
+    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), signup_window), bg="black", fg="white", relief=tk.RIDGE)  
     signup_button.pack()
+
+    back_button = tk.Button(signup_window, text="Back to Login", command=lambda: go_back_to_login(signup_window), bg="black", fg="white", relief=tk.RIDGE)  
+    back_button.pack()
 
 def perform_signup(new_username, new_password, signup_window):
     new_user_data = {"username": new_username, "password": new_password}
@@ -68,20 +67,62 @@ def perform_signup(new_username, new_password, signup_window):
     signup_window.destroy()
     root.deiconify()
 
+def go_back_to_login(signup_window):
+    signup_window.destroy()
+    root.deiconify()
+
 def open_main_page(username):
-    root.withdraw()
     main_page = tk.Toplevel()
     main_page.title("Main Page")
     main_page.geometry("400x200")
+    main_page.configure(bg="black")  
 
-    welcome_label = tk.Label(main_page, text="Welcome, " + username + "!")
+    welcome_label = tk.Label(main_page, text="Welcome, " + username + "!", bg="black", fg="white")  
     welcome_label.pack()
 
-    # Display a random event on the main page
-    event_label = tk.Label(main_page, text="Today's Event: " + generate_random_event())
+    event_label = tk.Label(main_page, text="Today's Event: " + get_current_event(), bg="black", fg="white")  
     event_label.pack()
 
+    change_event_button = tk.Button(main_page, text="Change Event", command=lambda: change_event(event_label), bg="black", fg="white", relief=tk.RIDGE)  
+    change_event_button.pack()
+
     # Add additional components or functionality for the main page here
+
+    # Run the main page main loop
+    main_page.mainloop()
+
+def get_current_event():
+    try:
+        with open('event_data.json', 'r') as file:
+            data = json.load(file)
+        return data["current_event"]
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return "No Event Set"
+
+def change_event(event_label):
+    change_event_window = tk.Toplevel()
+    change_event_window.title("Change Event")
+    change_event_window.geometry("300x150")
+    change_event_window.configure(bg="black")  
+
+    current_event_label = tk.Label(change_event_window, text="Current Event:", bg="black", fg="white")  
+    current_event_label.pack()
+
+    current_event_entry = tk.Entry(change_event_window, bg="black", fg="white")  
+    current_event_entry.insert(0, get_current_event())
+    current_event_entry.pack()
+
+    update_event_button = tk.Button(change_event_window, text="Update Event", command=lambda: update_event(event_label, current_event_entry.get(), change_event_window), bg="black", fg="white", relief=tk.RIDGE)  
+    update_event_button.pack()
+
+def update_event(event_label, new_event, change_event_window):
+    data = {"current_event": new_event}
+
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+    event_label.config(text="Today's Event: " + new_event)
+    change_event_window.destroy()
 
 def main():
     create_json_file_if_not_exists()
@@ -90,24 +131,26 @@ def main():
     root = tk.Tk()
     root.title("Login")
     root.geometry("400x200")
+    root.configure(bg="black")  
 
     global username_entry, password_entry
-    username_label = tk.Label(root, text="Username")
+    username_label = tk.Label(root, text="Username", bg="black", fg="white")  
     username_label.pack()
-    username_entry = tk.Entry(root)
+    username_entry = tk.Entry(root, bg="black", fg="white")  
     username_entry.pack()
 
-    password_label = tk.Label(root, text="Password")
+    password_label = tk.Label(root, text="Password", bg="black", fg="white")  
     password_label.pack()
-    password_entry = tk.Entry(root, show="*")
+    password_entry = tk.Entry(root, show="*", bg="black", fg="white")  
     password_entry.pack()
 
-    login_button = tk.Button(root, text="Login", command=check_credentials)
+    login_button = tk.Button(root, text="Login", command=check_credentials, bg="black", fg="white", relief=tk.RIDGE)  
     login_button.pack()
 
-    signup_button = tk.Button(root, text="Sign Up", command=open_signup)
+    signup_button = tk.Button(root, text="Sign Up", command=open_signup, bg="black", fg="white", relief=tk.RIDGE)  
     signup_button.pack()
 
+    # Run the root main loop
     root.mainloop()
 
 if __name__ == "__main__":
