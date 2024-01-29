@@ -11,7 +11,7 @@ def create_json_file_if_not_exists():
 def create_event_file_if_not_exists():
     if not os.path.exists('event_data.json'):
         with open('event_data.json', 'w') as file:
-            json.dump({"current_event": "No Event Set", "all_events": []}, file)
+            json.dump({"all_events": []}, file)
 
 def load_user_data():
     try:
@@ -99,70 +99,73 @@ def open_main_page(username):
     welcome_label = tk.Label(main_page, text="Welcome, " + username + "!", bg="black", fg="white")  
     welcome_label.pack()
 
-    event_label = tk.Label(main_page, text="Today's Event: " + get_current_event(), bg="black", fg="white")  
-    event_label.pack()
+    view_all_events_label = tk.Label(main_page, text="All Events:", bg="black", fg="white")  
+    view_all_events_label.pack()
 
-    change_event_button = tk.Button(main_page, text="Change Event", command=lambda: change_event(event_label), bg="black", fg="white", relief=tk.RIDGE)  
+    data = load_event_data()
+    global all_events_list
+    all_events_list = tk.Listbox(main_page, bg="black", fg="white")
+    for event in data.get("all_events", []):
+        all_events_list.insert(tk.END, event)
+    all_events_list.pack()
+
+    change_event_button = tk.Button(main_page, text="Change Event", command=change_event, bg="black", fg="white", relief=tk.RIDGE)  
     change_event_button.pack()
-
-    view_events_button = tk.Button(main_page, text="View All Events", command=view_all_events, bg="black", fg="white", relief=tk.RIDGE)  
-    view_events_button.pack()
 
     add_event_button = tk.Button(main_page, text="Add Event", command=add_event, bg="black", fg="white", relief=tk.RIDGE)  
     add_event_button.pack()
 
-def get_current_event():
-    data = load_event_data()
-    return data["current_event"]
+    delete_event_button = tk.Button(main_page, text="Delete Event", command=delete_event, bg="black", fg="white", relief=tk.RIDGE)  
+    delete_event_button.pack()
 
-def change_event(event_label):
+def change_event():
     change_event_window = tk.Toplevel()
     change_event_window.title("Change Event")
     change_event_window.geometry("500x300")
     center_window(change_event_window)
     change_event_window.configure(bg="black")  
 
-    current_event_label = tk.Label(change_event_window, text="Current Event:", bg="black", fg="white")  
+    current_event_label = tk.Label(change_event_window, text="Select Event:", bg="black", fg="white")  
     current_event_label.pack()
 
-    current_event_entry = tk.Entry(change_event_window, bg="black", fg="white")  
-    current_event_entry.insert(0, get_current_event())
-    current_event_entry.pack()
-
-    update_event_button = tk.Button(change_event_window, text="Update Event", command=lambda: update_event(event_label, current_event_entry.get(), change_event_window), bg="black", fg="white", relief=tk.RIDGE)  
-    update_event_button.pack()
-
-def update_event(event_label, new_event, change_event_window):
     data = load_event_data()
-    data["current_event"] = new_event
-    update_all_events(new_event)
+    selected_event = tk.StringVar(value=data["all_events"][0] if data["all_events"] else "No Event")
+    event_dropdown = tk.OptionMenu(change_event_window, selected_event, *data.get("all_events", []))
+    event_dropdown.pack()
+
+    edit_event_button = tk.Button(change_event_window, text="Edit Event", command=lambda: edit_event(selected_event.get(), change_event_window), bg="black", fg="white", relief=tk.RIDGE)  
+    edit_event_button.pack()
+
+    close_edit_button = tk.Button(change_event_window, text="Close Edit", command=change_event_window.destroy, bg="black", fg="white", relief=tk.RIDGE)  
+    close_edit_button.pack()
+
+def edit_event(selected_event, change_event_window):
+    edit_event_window = tk.Toplevel()
+    edit_event_window.title("Edit Event")
+    edit_event_window.geometry("400x200")
+    center_window(edit_event_window)
+    edit_event_window.configure(bg="black")  
+
+    current_event_label = tk.Label(edit_event_window, text="Edit Event:", bg="black", fg="white")  
+    current_event_label.pack()
+
+    edited_event_entry = tk.Entry(edit_event_window, bg="black", fg="white")
+    edited_event_entry.insert(0, selected_event)
+    edited_event_entry.pack()
+
+    save_edit_button = tk.Button(edit_event_window, text="Save Edit", command=lambda: save_edit(selected_event, edited_event_entry.get(), edit_event_window), bg="black", fg="white", relief=tk.RIDGE)  
+    save_edit_button.pack()
+
+def save_edit(selected_event, edited_event, edit_event_window):
+    data = load_event_data()
+    index = data["all_events"].index(selected_event)
+    data["all_events"][index] = edited_event
+
     with open('event_data.json', 'w') as file:
         json.dump(data, file)
 
-    event_label.config(text="Today's Event: " + new_event)
-    change_event_window.destroy()
-
-def update_all_events(new_event):
-    data = load_event_data()
-    data.setdefault("all_events", []).append(new_event)
-    with open('event_data.json', 'w') as file:
-        json.dump(data, file)
-
-def view_all_events():
-    all_events_window = tk.Toplevel()
-    all_events_window.title("All Events")
-    all_events_window.geometry("600x400")
-    center_window(all_events_window)
-    all_events_window.configure(bg="black")  
-
-    all_events_label = tk.Label(all_events_window, text="All Events:", bg="black", fg="white")  
-    all_events_label.pack()
-
-    data = load_event_data()
-    all_events_list = tk.Listbox(all_events_window, bg="black", fg="white")
-    for event in data.get("all_events", []):
-        all_events_list.insert(tk.END, event)
-    all_events_list.pack()
+    edit_event_window.destroy()
+    update_all_events_list()
 
 def add_event():
     add_event_window = tk.Toplevel()
@@ -184,6 +187,47 @@ def save_event(new_event, add_event_window):
     update_all_events(new_event)
     messagebox.showinfo("Event Added", "Event has been added successfully!")
     add_event_window.destroy()
+    update_all_events_list()
+
+def update_all_events(new_event):
+    data = load_event_data()
+    data.setdefault("all_events", []).append(new_event)
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+def delete_event():
+    delete_event_window = tk.Toplevel()
+    delete_event_window.title("Delete Event")
+    delete_event_window.geometry("400x200")
+    center_window(delete_event_window)
+    delete_event_window.configure(bg="black")  
+
+    current_event_label = tk.Label(delete_event_window, text="Select Event to Delete:", bg="black", fg="white")  
+    current_event_label.pack()
+
+    data = load_event_data()
+    selected_event = tk.StringVar(value=data["all_events"][0] if data["all_events"] else "No Event")
+    event_dropdown = tk.OptionMenu(delete_event_window, selected_event, *data.get("all_events", []))
+    event_dropdown.pack()
+
+    delete_selected_button = tk.Button(delete_event_window, text="Delete Selected Event", command=lambda: delete_selected_event(selected_event.get(), delete_event_window), bg="black", fg="white", relief=tk.RIDGE)  
+    delete_selected_button.pack()
+
+def delete_selected_event(selected_event, delete_event_window):
+    data = load_event_data()
+    data["all_events"].remove(selected_event)
+
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+    delete_event_window.destroy()
+    update_all_events_list()
+
+def update_all_events_list():
+    all_events_list.delete(0, tk.END)
+    data = load_event_data()
+    for event in data.get("all_events", []):
+        all_events_list.insert(tk.END, event)
 
 def center_window(window):
     window.update_idletasks()
