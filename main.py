@@ -43,7 +43,6 @@ def check_credentials():
         if user_data["username"] == username and user_data["password"] == password:
             messagebox.showinfo("Login successful", "Welcome, " + username + "!")
             open_main_page(username)
-            login_window.destroy()  # Close the login window
             return
 
     messagebox.showerror("Login failed", "Invalid username or password")
@@ -52,7 +51,8 @@ def open_signup():
     root.withdraw()
     signup_window = tk.Toplevel()
     signup_window.title("Sign Up")
-    signup_window.geometry("400x300")
+    signup_window.geometry("500x400")
+    center_window(signup_window)
     signup_window.configure(bg="black")  
 
     signup_username_label = tk.Label(signup_window, text="New Username", bg="black", fg="white")  
@@ -89,9 +89,11 @@ def go_back_to_login(signup_window):
     root.deiconify()
 
 def open_main_page(username):
+    global main_page
     main_page = tk.Toplevel()
     main_page.title("Main Page")
-    main_page.geometry("400x200")
+    main_page.geometry("600x500")
+    center_window(main_page)
     main_page.configure(bg="black")  
 
     welcome_label = tk.Label(main_page, text="Welcome, " + username + "!", bg="black", fg="white")  
@@ -106,10 +108,8 @@ def open_main_page(username):
     view_events_button = tk.Button(main_page, text="View All Events", command=view_all_events, bg="black", fg="white", relief=tk.RIDGE)  
     view_events_button.pack()
 
-    # Add additional components or functionality for the main page here
-
-    # Run the main page main loop
-    main_page.mainloop()
+    add_event_button = tk.Button(main_page, text="Add Event", command=add_event, bg="black", fg="white", relief=tk.RIDGE)  
+    add_event_button.pack()
 
 def get_current_event():
     data = load_event_data()
@@ -118,7 +118,8 @@ def get_current_event():
 def change_event(event_label):
     change_event_window = tk.Toplevel()
     change_event_window.title("Change Event")
-    change_event_window.geometry("300x150")
+    change_event_window.geometry("500x300")
+    center_window(change_event_window)
     change_event_window.configure(bg="black")  
 
     current_event_label = tk.Label(change_event_window, text="Current Event:", bg="black", fg="white")  
@@ -150,7 +151,8 @@ def update_all_events(new_event):
 def view_all_events():
     all_events_window = tk.Toplevel()
     all_events_window.title("All Events")
-    all_events_window.geometry("400x200")
+    all_events_window.geometry("600x400")
+    center_window(all_events_window)
     all_events_window.configure(bg="black")  
 
     all_events_label = tk.Label(all_events_window, text="All Events:", bg="black", fg="white")  
@@ -162,14 +164,41 @@ def view_all_events():
         all_events_list.insert(tk.END, event)
     all_events_list.pack()
 
-def main():
-    create_json_file_if_not_exists()
-    create_event_file_if_not_exists()
+def add_event():
+    add_event_window = tk.Toplevel()
+    add_event_window.title("Add Event")
+    add_event_window.geometry("500x300")
+    center_window(add_event_window)
+    add_event_window.configure(bg="black")  
 
+    new_event_label = tk.Label(add_event_window, text="New Event:", bg="black", fg="white")  
+    new_event_label.pack()
+
+    new_event_entry = tk.Entry(add_event_window, bg="black", fg="white")  
+    new_event_entry.pack()
+
+    save_event_button = tk.Button(add_event_window, text="Save Event", command=lambda: save_event(new_event_entry.get(), add_event_window), bg="black", fg="white", relief=tk.RIDGE)  
+    save_event_button.pack()
+
+def save_event(new_event, add_event_window):
+    update_all_events(new_event)
+    messagebox.showinfo("Event Added", "Event has been added successfully!")
+    add_event_window.destroy()
+
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+def main():
     global root
     root = tk.Tk()
     root.title("Login")
-    root.geometry("400x200")
+    root.geometry("500x400")
+    center_window(root)
     root.configure(bg="black")  
 
     global username_entry, password_entry
