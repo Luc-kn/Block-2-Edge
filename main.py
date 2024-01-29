@@ -2,6 +2,8 @@ import tkinter as tk
 import json
 import os
 from tkinter import messagebox
+import datetime
+import time
 
 def create_json_file_if_not_exists():
     if not os.path.exists('user_data.json'):
@@ -94,12 +96,12 @@ def open_main_page(username):
     main_page.title("Main Page")
     main_page.geometry("600x500")
     center_window(main_page)
-    main_page.configure(bg="black")  
+    main_page.configure(bg="black")
 
-    welcome_label = tk.Label(main_page, text="Welcome, " + username + "!", bg="black", fg="white")  
+    welcome_label = tk.Label(main_page, text="Welcome, " + username + "!", bg="black", fg="white")
     welcome_label.pack()
 
-    view_all_events_label = tk.Label(main_page, text="All Events:", bg="black", fg="white")  
+    view_all_events_label = tk.Label(main_page, text="All Events:", bg="black", fg="white")
     view_all_events_label.pack()
 
     data = load_event_data()
@@ -109,14 +111,104 @@ def open_main_page(username):
         all_events_list.insert(tk.END, event)
     all_events_list.pack()
 
-    change_event_button = tk.Button(main_page, text="Change Event", command=change_event, bg="black", fg="white", relief=tk.RIDGE)  
+    all_events_list.bind("<Double-Button-1>", lambda event: view_event_details(all_events_list.get(tk.ACTIVE)))
+
+    change_event_button = tk.Button(main_page, text="Change Event", command=change_event, bg="black", fg="white",
+                                    relief=tk.RIDGE)
     change_event_button.pack()
 
-    add_event_button = tk.Button(main_page, text="Add Event", command=add_event, bg="black", fg="white", relief=tk.RIDGE)  
+    add_event_button = tk.Button(main_page, text="Add Event", command=add_event, bg="black", fg="white",
+                                 relief=tk.RIDGE)
     add_event_button.pack()
 
-    delete_event_button = tk.Button(main_page, text="Delete Event", command=delete_event, bg="black", fg="white", relief=tk.RIDGE)  
+    delete_event_button = tk.Button(main_page, text="Delete Event", command=delete_event, bg="black", fg="white",
+                                    relief=tk.RIDGE)
     delete_event_button.pack()
+
+
+
+def view_event_details(selected_event):
+    view_details_window = tk.Toplevel()
+    view_details_window.title("Event Details")
+    view_details_window.geometry("400x300")
+    center_window(view_details_window)
+    view_details_window.configure(bg="black")
+
+    current_event_label = tk.Label(view_details_window, text="Event Details:", bg="black", fg="white")
+    current_event_label.pack()
+
+    data = load_event_data()
+    event_details = data.get(selected_event, {})
+
+    time_label = tk.Label(view_details_window, text="Time:", bg="black", fg="white")
+    time_label.pack()
+    time_entry = tk.Entry(view_details_window, bg="black", fg="white")
+    time_entry.insert(0, event_details.get("time", ""))
+    time_entry.pack()
+
+    date_label = tk.Label(view_details_window, text="Date:", bg="black", fg="white")
+    date_label.pack()
+    date_entry = tk.Entry(view_details_window, bg="black", fg="white")
+    date_entry.insert(0, event_details.get("date", ""))
+    date_entry.pack()
+
+    location_label = tk.Label(view_details_window, text="Location:", bg="black", fg="white")
+    location_label.pack()
+    location_entry = tk.Entry(view_details_window, bg="black", fg="white")
+    location_entry.insert(0, event_details.get("location", ""))
+    location_entry.pack()
+
+    major_label = tk.Label(view_details_window, text="Major:", bg="black", fg="white")
+    major_label.pack()
+    major_entry = tk.Entry(view_details_window, bg="black", fg="white")
+    major_entry.insert(0, event_details.get("major", ""))
+    major_entry.pack()
+
+    teacher_label = tk.Label(view_details_window, text="Teacher:", bg="black", fg="white")
+    teacher_label.pack()
+    teacher_entry = tk.Entry(view_details_window, bg="black", fg="white")
+    teacher_entry.insert(0, event_details.get("teacher", ""))
+    teacher_entry.pack()
+
+    submit_button = tk.Button(view_details_window, text="Submit",
+                              command=lambda: save_event_details(selected_event, time_entry.get(),
+                                                                   date_entry.get(), location_entry.get(),
+                                                                   major_entry.get(), teacher_entry.get(),
+                                                                   view_details_window),
+                              bg="black", fg="white", relief=tk.RIDGE)
+    submit_button.pack()
+
+def save_event_details(selected_event, time, date, location, major, teacher, view_details_window):
+    if not (time and date):
+        messagebox.showerror("Error", "Please fill in time and date.")
+        return
+
+    # Validate time format (HH:MM)
+    try:
+        time.strptime(time, "%H:%M")
+    except ValueError:
+        messagebox.showerror("Error", "Invalid time format. Please use HH:MM.")
+        return
+
+    # Validate date format (YYYY-MM-DD)
+    try:
+        datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        messagebox.showerror("Error", "Invalid date format. Please use YYYY-MM-DD.")
+        return
+
+    data = load_event_data()
+    event_details = data.setdefault(selected_event, {})
+    event_details["time"] = time
+    event_details["date"] = date
+    event_details["location"] = location
+    event_details["major"] = major
+    event_details["teacher"] = teacher
+
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+    view_details_window.destroy()
 
 def change_event():
     change_event_window = tk.Toplevel()
@@ -228,6 +320,66 @@ def update_all_events_list():
     data = load_event_data()
     for event in data.get("all_events", []):
         all_events_list.insert(tk.END, event)
+
+def view_event_details(selected_event):
+    view_details_window = tk.Toplevel()
+    view_details_window.title("Event Details")
+    view_details_window.geometry("400x300")
+    center_window(view_details_window)
+    view_details_window.configure(bg="black")  
+
+    current_event_label = tk.Label(view_details_window, text="Event Details:", bg="black", fg="white")  
+    current_event_label.pack()
+
+    data = load_event_data()
+    event_details = data.get(selected_event, {})
+    
+    time_label = tk.Label(view_details_window, text="Time:", bg="black", fg="white")  
+    time_label.pack()
+    time_entry = tk.Entry(view_details_window, bg="black", fg="white")  
+    time_entry.insert(0, event_details.get("time", ""))
+    time_entry.pack()
+
+    date_label = tk.Label(view_details_window, text="Date:", bg="black", fg="white")  
+    date_label.pack()
+    date_entry = tk.Entry(view_details_window, bg="black", fg="white")  
+    date_entry.insert(0, event_details.get("date", ""))
+    date_entry.pack()
+
+    location_label = tk.Label(view_details_window, text="Location:", bg="black", fg="white")  
+    location_label.pack()
+    location_entry = tk.Entry(view_details_window, bg="black", fg="white")  
+    location_entry.insert(0, event_details.get("location", ""))
+    location_entry.pack()
+
+    major_label = tk.Label(view_details_window, text="Major:", bg="black", fg="white")  
+    major_label.pack()
+    major_entry = tk.Entry(view_details_window, bg="black", fg="white")  
+    major_entry.insert(0, event_details.get("major", ""))
+    major_entry.pack()
+
+    teacher_label = tk.Label(view_details_window, text="Teacher:", bg="black", fg="white")  
+    teacher_label.pack()
+    teacher_entry = tk.Entry(view_details_window, bg="black", fg="white")  
+    teacher_entry.insert(0, event_details.get("teacher", ""))
+    teacher_entry.pack()
+
+    save_details_button = tk.Button(view_details_window, text="Save Details", command=lambda: save_event_details(selected_event, time_entry.get(), date_entry.get(), location_entry.get(), major_entry.get(), teacher_entry.get(), view_details_window), bg="black", fg="white", relief=tk.RIDGE)  
+    save_details_button.pack()
+
+def save_event_details(selected_event, time, date, location, major, teacher, view_details_window):
+    data = load_event_data()
+    event_details = data.setdefault(selected_event, {})
+    event_details["time"] = time
+    event_details["date"] = date
+    event_details["location"] = location
+    event_details["major"] = major
+    event_details["teacher"] = teacher
+
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+    view_details_window.destroy()
 
 def center_window(window):
     window.update_idletasks()
