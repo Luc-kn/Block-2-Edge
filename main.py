@@ -125,7 +125,12 @@ def open_main_page(username):
                                     relief=tk.RIDGE)
     delete_event_button.pack()
 
+    logout_button = tk.Button(main_page, text="Logout", command=logout, bg="black", fg="white", relief=tk.RIDGE)
+    logout_button.pack()
 
+def logout():
+    main_page.destroy()
+    root.deiconify()
 
 def view_event_details(selected_event):
     view_details_window = tk.Toplevel()
