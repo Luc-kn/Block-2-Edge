@@ -8,12 +8,28 @@ def create_json_file_if_not_exists():
         with open('user_data.json', 'w') as file:
             json.dump([], file)
 
+def create_event_file_if_not_exists():
+    if not os.path.exists('event_data.json'):
+        with open('event_data.json', 'w') as file:
+            json.dump({"current_event": "No Event Set", "all_events": []}, file)
+
 def load_user_data():
     try:
         with open('user_data.json', 'r') as file:
             data = json.load(file)
     except json.decoder.JSONDecodeError:
         data = []
+
+    return data
+
+def load_event_data():
+    try:
+        with open('event_data.json', 'r') as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        create_event_file_if_not_exists()
+        with open('event_data.json', 'r') as file:
+            data = json.load(file)
 
     return data
 
@@ -27,6 +43,7 @@ def check_credentials():
         if user_data["username"] == username and user_data["password"] == password:
             messagebox.showinfo("Login successful", "Welcome, " + username + "!")
             open_main_page(username)
+            login_window.destroy()  # Close the login window
             return
 
     messagebox.showerror("Login failed", "Invalid username or password")
@@ -86,18 +103,17 @@ def open_main_page(username):
     change_event_button = tk.Button(main_page, text="Change Event", command=lambda: change_event(event_label), bg="black", fg="white", relief=tk.RIDGE)  
     change_event_button.pack()
 
+    view_events_button = tk.Button(main_page, text="View All Events", command=view_all_events, bg="black", fg="white", relief=tk.RIDGE)  
+    view_events_button.pack()
+
     # Add additional components or functionality for the main page here
 
     # Run the main page main loop
     main_page.mainloop()
 
 def get_current_event():
-    try:
-        with open('event_data.json', 'r') as file:
-            data = json.load(file)
-        return data["current_event"]
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return "No Event Set"
+    data = load_event_data()
+    return data["current_event"]
 
 def change_event(event_label):
     change_event_window = tk.Toplevel()
@@ -116,16 +132,39 @@ def change_event(event_label):
     update_event_button.pack()
 
 def update_event(event_label, new_event, change_event_window):
-    data = {"current_event": new_event}
-
+    data = load_event_data()
+    data["current_event"] = new_event
+    update_all_events(new_event)
     with open('event_data.json', 'w') as file:
         json.dump(data, file)
 
     event_label.config(text="Today's Event: " + new_event)
     change_event_window.destroy()
 
+def update_all_events(new_event):
+    data = load_event_data()
+    data.setdefault("all_events", []).append(new_event)
+    with open('event_data.json', 'w') as file:
+        json.dump(data, file)
+
+def view_all_events():
+    all_events_window = tk.Toplevel()
+    all_events_window.title("All Events")
+    all_events_window.geometry("400x200")
+    all_events_window.configure(bg="black")  
+
+    all_events_label = tk.Label(all_events_window, text="All Events:", bg="black", fg="white")  
+    all_events_label.pack()
+
+    data = load_event_data()
+    all_events_list = tk.Listbox(all_events_window, bg="black", fg="white")
+    for event in data.get("all_events", []):
+        all_events_list.insert(tk.END, event)
+    all_events_list.pack()
+
 def main():
     create_json_file_if_not_exists()
+    create_event_file_if_not_exists()
 
     global root
     root = tk.Tk()
