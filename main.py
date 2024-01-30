@@ -43,8 +43,12 @@ def check_credentials():
 
     for user_data in data:
         if user_data["username"] == username and user_data["password"] == password:
-            messagebox.showinfo("Login successful", "Welcome, " + username + "!")
-            open_main_page(username)
+            if user_data.get("is_student", False):
+                messagebox.showinfo("Login successful", "Welcome, " + username + "! You are logged in as a student.")
+                open_student_page(username)
+            else:
+                messagebox.showinfo("Login successful", "Welcome, " + username + "! You are logged in.")
+                open_main_page(username)
             return
 
     messagebox.showerror("Login failed", "Invalid username or password")
@@ -67,14 +71,19 @@ def open_signup():
     signup_password_entry = tk.Entry(signup_window, show="*", bg="black", fg="white")  
     signup_password_entry.pack()
 
-    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), signup_window), bg="black", fg="white", relief=tk.RIDGE)  
+    # Add a checkbox to mark as a student
+    is_student_var = tk.BooleanVar()
+    is_student_checkbox = tk.Checkbutton(signup_window, text="Mark as Student", variable=is_student_var, bg="white", fg="")
+    is_student_checkbox.pack()
+
+    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), is_student_var.get(), signup_window), bg="black", fg="white", relief=tk.RIDGE)  
     signup_button.pack()
 
     back_button = tk.Button(signup_window, text="Back to Login", command=lambda: go_back_to_login(signup_window), bg="black", fg="white", relief=tk.RIDGE)  
     back_button.pack()
 
-def perform_signup(new_username, new_password, signup_window):
-    new_user_data = {"username": new_username, "password": new_password}
+def perform_signup(new_username, new_password, is_student, signup_window):
+    new_user_data = {"username": new_username, "password": new_password, "is_student": is_student}
 
     data = load_user_data()
     data.append(new_user_data)
@@ -85,6 +94,7 @@ def perform_signup(new_username, new_password, signup_window):
     messagebox.showinfo("Sign Up successful", "Welcome, " + new_username + "!")
     signup_window.destroy()
     root.deiconify()
+
 
 def go_back_to_login(signup_window):
     signup_window.destroy()
@@ -125,8 +135,21 @@ def open_main_page(username):
                                     relief=tk.RIDGE)
     delete_event_button.pack()
 
+    # Check if the user is a student and add a button to open the student page
+    if is_student(username):  # Replace this with your own logic to determine student status
+        student_page_button = tk.Button(main_page, text="Student Page", command=lambda: open_student_page(username),
+                                        bg="black", fg="white", relief=tk.RIDGE)
+        student_page_button.pack()
+
     logout_button = tk.Button(main_page, text="Logout", command=logout, bg="black", fg="white", relief=tk.RIDGE)
     logout_button.pack()
+
+def is_student(username):
+    data = load_user_data()
+    for user_data in data:
+        if user_data["username"] == username and user_data.get("is_student", False):
+            return True
+    return False
 
 def logout():
     main_page.destroy()
@@ -393,6 +416,204 @@ def center_window(window):
     x = (window.winfo_screenwidth() // 2) - (width // 2)
     y = (window.winfo_screenheight() // 2) - (height // 2)
     window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+
+def open_student_page(username):
+    global student_page
+    student_page = tk.Toplevel()
+    student_page.title("Student Page")
+    student_page.geometry("600x500")
+    center_window(student_page)
+    student_page.configure(bg="black")
+
+    welcome_label = tk.Label(student_page, text="Welcome, " + username + "!", bg="black", fg="white")
+    welcome_label.pack()
+
+    view_enrolled_events_label = tk.Label(student_page, text="Enrolled Activities:", bg="black", fg="white")
+    view_enrolled_events_label.pack()
+
+    data = load_event_data()
+    global enrolled_events_list
+    enrolled_events_list = tk.Listbox(student_page, bg="black", fg="white")
+    for event in data.get("enrolled_activities", {}).get(username, []):
+        enrolled_events_list.insert(tk.END, event)
+    enrolled_events_list.pack()
+
+    enrolled_events_list.bind("<Double-Button-1>", lambda event: view_enrolled_event_details(enrolled_events_list.get(tk.ACTIVE)))
+
+    view_details_button = tk.Button(student_page, text="View Details", command=lambda: view_enrolled_event_details(enrolled_events_list.get(tk.ACTIVE)), bg="black", fg="white", relief=tk.RIDGE)
+    view_details_button.pack()
+
+    unenroll_button = tk.Button(student_page, text="Unenroll", command=lambda: unenroll_from_event(username, enrolled_events_list.get(tk.ACTIVE)), bg="black", fg="white", relief=tk.RIDGE)
+    unenroll_button.pack()
+
+    enroll_button = tk.Button(student_page, text="Enroll in Activity", command=open_enroll_window, bg="black", fg="white", relief=tk.RIDGE)
+    enroll_button.pack()
+
+    go_back_button = tk.Button(student_page, text="Go Back", command=student_page.destroy, bg="black", fg="white", relief=tk.RIDGE)
+    go_back_button.pack()
+
+def open_enroll_window():
+    enroll_window = tk.Toplevel()
+    enroll_window.title("Enroll in Activity")
+    enroll_window.geometry("500x300")
+    center_window(enroll_window)
+    enroll_window.configure(bg="black")
+
+    available_activities_label = tk.Label(enroll_window, text="Available Activities:", bg="black", fg="white")
+    available_activities_label.pack()
+
+    data = load_event_data()
+    available_activities = list(set(data.get("all_events", [])) - set(get_enrolled_activities()))
+
+    global available_activities_listbox
+    available_activities_listbox = tk.Listbox(enroll_window, bg="black", fg="white")
+    for activity in available_activities:
+        available_activities_listbox.insert(tk.END, activity)
+    available_activities_listbox.pack()
+
+    enroll_selected_button = tk.Button(enroll_window, text="Enroll", command=lambda: enroll_in_activity(username_entry.get(), available_activities_listbox.get(tk.ACTIVE)), bg="black", fg="white", relief=tk.RIDGE)
+    enroll_selected_button.pack()
+
+def load_event_data():
+    try:
+        with open('event_data.json', 'r') as file:
+            data = json.load(file)
+            if 'all_events' not in data:
+                data['all_events'] = []
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        data = {'all_events': []}
+
+    return data
+
+def view_enrolled_event_details(selected_event):
+    view_details_window = tk.Toplevel()
+    view_details_window.title("Event Details")
+    view_details_window.geometry("400x300")
+    center_window(view_details_window)
+    view_details_window.configure(bg="black")
+
+    current_event_label = tk.Label(view_details_window, text="Event Details:", bg="black", fg="white")
+    current_event_label.pack()
+
+    data = load_event_data()
+    event_details = data.get(selected_event, {})
+
+    time_label = tk.Label(view_details_window, text="Time:", bg="black", fg="white")
+    time_label.pack()
+    time_entry = tk.Entry(view_details_window, bg="black", fg="white", state='readonly')
+    time_entry.insert(0, event_details.get("time", ""))
+    time_entry.pack()
+
+    date_label = tk.Label(view_details_window, text="Date:", bg="black", fg="white")
+    date_label.pack()
+    date_entry = tk.Entry(view_details_window, bg="black", fg="white", state='readonly')
+    date_entry.insert(0, event_details.get("date", ""))
+    date_entry.pack()
+
+    location_label = tk.Label(view_details_window, text="Location:", bg="black", fg="white")
+    location_label.pack()
+    location_entry = tk.Entry(view_details_window, bg="black", fg="white", state='readonly')
+    location_entry.insert(0, event_details.get("location", ""))
+    location_entry.pack()
+
+    major_label = tk.Label(view_details_window, text="Major:", bg="black", fg="white")
+    major_label.pack()
+    major_entry = tk.Entry(view_details_window, bg="black", fg="white", state='readonly')
+    major_entry.insert(0, event_details.get("major", ""))
+    major_entry.pack()
+
+    teacher_label = tk.Label(view_details_window, text="Teacher:", bg="black", fg="white")
+    teacher_label.pack()
+    teacher_entry = tk.Entry(view_details_window, bg="black", fg="white", state='readonly')
+    teacher_entry.insert(0, event_details.get("teacher", ""))
+    teacher_entry.pack()
+
+def load_student_data(username):
+    try:
+        with open('student_data.json', 'r') as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        data = {}
+    return data.setdefault(username, {})
+
+def save_student_data(username, student_data):
+    data = load_student_data(username)
+    data.update(student_data)
+    with open('student_data.json', 'w') as file:
+        json.dump({username: data}, file)
+
+def enroll_in_activity(username, selected_activity):
+    if not selected_activity:
+        messagebox.showerror("Error", "Please select an activity to enroll.")
+        return
+
+    student_data = {"enrolled_activities": get_enrolled_activities()}
+    student_data["enrolled_activities"].append(selected_activity)
+    save_student_data(username, student_data)
+    messagebox.showinfo("Enrollment successful", "You have successfully enrolled in the activity: " + selected_activity)
+    update_enrolled_activities_list()
+    update_enroll_list()
+    enroll_window.destroy()
+
+def update_enroll_list():
+    available_activities_listbox.delete(0, tk.END)
+    data = load_event_data()
+    available_activities = list(set(data.get("all_events", [])) - set(get_enrolled_activities()))
+    for activity in available_activities:
+        available_activities_listbox.insert(tk.END, activity)
+
+def enroll_activity():
+    enroll_activity_window = tk.Toplevel()
+    enroll_activity_window.title("Enroll in Activity")
+    enroll_activity_window.geometry("500x300")
+    center_window(enroll_activity_window)
+    enroll_activity_window.configure(bg="black")
+
+    available_activities_label = tk.Label(enroll_activity_window, text="Available Activities:", bg="black", fg="white")
+    available_activities_label.pack()
+
+    data = load_event_data()
+    available_activities = [event for event in data.get("all_events", []) if event not in get_enrolled_activities()]
+    selected_activity = tk.StringVar(value=available_activities[0] if available_activities else "No Activity")
+    activity_dropdown = tk.OptionMenu(enroll_activity_window, selected_activity, *available_activities)
+    activity_dropdown.pack()
+
+    enroll_button = tk.Button(enroll_activity_window, text="Enroll", command=lambda: enroll(selected_activity.get(), enroll_activity_window),
+                              bg="black", fg="white", relief=tk.RIDGE)
+    enroll_button.pack()
+
+    close_enroll_button = tk.Button(enroll_activity_window, text="Close", command=enroll_activity_window.destroy, bg="black", fg="white",
+                                    relief=tk.RIDGE)
+    close_enroll_button.pack()
+
+def enroll(selected_activity, enroll_activity_window):
+    student_data = {"enrolled_activities": get_enrolled_activities()}
+    student_data["enrolled_activities"].append(selected_activity)
+    save_student_data(username_entry.get(), student_data)
+    messagebox.showinfo("Enrollment successful", "You have successfully enrolled in the activity: " + selected_activity)
+    enroll_activity_window.destroy()
+    update_enrolled_activities_list()
+
+def get_enrolled_activities():
+    data = load_student_data(username_entry.get())
+    return data.get("enrolled_activities", [])
+
+def update_enrolled_activities_list():
+    enrolled_activities_list.delete(0, tk.END)
+    for activity in get_enrolled_activities():
+        enrolled_activities_list.insert(tk.END, activity)
+
+def logout():
+    root.deiconify()
+    main_page.destroy()
+    if 'main_page' in globals():
+        del globals()['main_page']
+    if 'all_events_list' in globals():
+        del globals()['all_events_list']
+    if 'enrolled_activities_list' in globals():
+        del globals()['enrolled_activities_list']
+
 
 def main():
     global root
