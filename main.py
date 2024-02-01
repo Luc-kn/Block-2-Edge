@@ -46,6 +46,9 @@ def check_credentials():
             if user_data.get("is_student", False):
                 messagebox.showinfo("Login successful", "Welcome, " + username + "! You are logged in as a student.")
                 open_student_page(username)
+            elif user_data.get("is_teacher", False):
+                messagebox.showinfo("Login successful", "Welcome, " + username + "! You are logged in as a teacher.")
+                open_teacher_page(username)
             else:
                 messagebox.showinfo("Login successful", "Welcome, " + username + "! You are logged in.")
                 open_main_page(username)
@@ -53,37 +56,43 @@ def check_credentials():
 
     messagebox.showerror("Login failed", "Invalid username or password")
 
+
 def open_signup():
     root.withdraw()
     signup_window = tk.Toplevel()
     signup_window.title("Sign Up")
     signup_window.geometry("500x400")
     center_window(signup_window)
-    signup_window.configure(bg="black")  
+    signup_window.configure(bg="black")
 
-    signup_username_label = tk.Label(signup_window, text="New Username", bg="black", fg="white")  
+    signup_username_label = tk.Label(signup_window, text="New Username", bg="black", fg="white")
     signup_username_label.pack()
-    signup_username_entry = tk.Entry(signup_window, bg="black", fg="white")  
+    signup_username_entry = tk.Entry(signup_window, bg="black", fg="white")
     signup_username_entry.pack()
 
-    signup_password_label = tk.Label(signup_window, text="New Password", bg="black", fg="white")  
+    signup_password_label = tk.Label(signup_window, text="New Password", bg="black", fg="white")
     signup_password_label.pack()
-    signup_password_entry = tk.Entry(signup_window, show="*", bg="black", fg="white")  
+    signup_password_entry = tk.Entry(signup_window, show="*", bg="black", fg="white")
     signup_password_entry.pack()
 
     # Add a checkbox to mark as a student
     is_student_var = tk.BooleanVar()
-    is_student_checkbox = tk.Checkbutton(signup_window, text="Mark as Student", variable=is_student_var, bg="white", fg="")
+    is_student_checkbox = tk.Checkbutton(signup_window, text="Mark as Student", variable=is_student_var, bg="black", fg="white")
     is_student_checkbox.pack()
 
-    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), is_student_var.get(), signup_window), bg="black", fg="white", relief=tk.RIDGE)  
+    # Add a checkbox to mark as a teacher
+    is_teacher_var = tk.BooleanVar()
+    is_teacher_checkbox = tk.Checkbutton(signup_window, text="Mark as Teacher", variable=is_teacher_var, bg="black", fg="white")
+    is_teacher_checkbox.pack()
+
+    signup_button = tk.Button(signup_window, text="Sign Up", command=lambda: perform_signup(signup_username_entry.get(), signup_password_entry.get(), is_student_var.get(), is_teacher_var.get(), signup_window), bg="black", fg="white", relief=tk.RIDGE)
     signup_button.pack()
 
-    back_button = tk.Button(signup_window, text="Back to Login", command=lambda: go_back_to_login(signup_window), bg="black", fg="white", relief=tk.RIDGE)  
+    back_button = tk.Button(signup_window, text="Back to Login", command=lambda: go_back_to_login(signup_window), bg="black", fg="white", relief=tk.RIDGE)
     back_button.pack()
 
-def perform_signup(new_username, new_password, is_student, signup_window):
-    new_user_data = {"username": new_username, "password": new_password, "is_student": is_student}
+def perform_signup(new_username, new_password, is_student, is_teacher, signup_window):
+    new_user_data = {"username": new_username, "password": new_password, "is_student": is_student, "is_teacher": is_teacher}
 
     data = load_user_data()
     data.append(new_user_data)
@@ -94,7 +103,6 @@ def perform_signup(new_username, new_password, is_student, signup_window):
     messagebox.showinfo("Sign Up successful", "Welcome, " + new_username + "!")
     signup_window.destroy()
     root.deiconify()
-
 
 def go_back_to_login(signup_window):
     signup_window.destroy()
@@ -416,6 +424,58 @@ def center_window(window):
     x = (window.winfo_screenwidth() // 2) - (width // 2)
     y = (window.winfo_screenheight() // 2) - (height // 2)
     window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+def open_teacher_page(username):
+    teacher_page = tk.Toplevel()
+    teacher_page.title("Teacher Page")
+    teacher_page.geometry("600x500")
+    center_window(teacher_page)
+    teacher_page.configure(bg="black")
+
+    welcome_label = tk.Label(teacher_page, text="Welcome, " + username + "!", bg="black", fg="white")
+    welcome_label.pack()
+
+    view_assigned_events_label = tk.Label(teacher_page, text="Assigned Events:", bg="black", fg="white")
+    view_assigned_events_label.pack()
+
+    data = load_event_data()
+    assigned_events = [event for event in data.get("all_events", []) if event.get("assigned_teacher") == username]
+    assigned_events.sort(key=lambda x: x.get("time", ""))  # Sort events by time
+
+    assigned_events_listbox = tk.Listbox(teacher_page, bg="black", fg="white", selectbackground="blue", selectforeground="black", activestyle="none")
+    for event in assigned_events:
+        assigned_events_listbox.insert(tk.END, f"{event['event_name']} - {event['time']}")
+    assigned_events_listbox.pack()
+
+    assigned_events_listbox.bind("<Double-Button-1>", lambda event: view_assigned_event_details(assigned_events_listbox.get(tk.ACTIVE), assigned_events))
+
+    view_details_button = tk.Button(teacher_page, text="View Details", command=lambda: view_assigned_event_details(assigned_events_listbox.get(tk.ACTIVE), assigned_events), bg="black", fg="white", relief=tk.RIDGE)
+    view_details_button.pack()
+
+    go_back_button = tk.Button(teacher_page, text="Go Back", command=teacher_page.destroy, bg="black", fg="white", relief=tk.RIDGE)
+    go_back_button.pack()
+
+def view_assigned_event_details(selected_event, assigned_events):
+    selected_index = assigned_events_listbox.curselection()[0]
+    selected_event_data = assigned_events[selected_index]
+
+    details_window = tk.Toplevel()
+    details_window.title("Event Details")
+    details_window.geometry("400x300")
+    center_window(details_window)
+    details_window.configure(bg="black")
+
+    event_name_label = tk.Label(details_window, text="Event Name: " + selected_event_data.get("event_name", ""), bg="black", fg="white")
+    event_name_label.pack()
+
+    time_label = tk.Label(details_window, text="Time: " + selected_event_data.get("time", ""), bg="black", fg="white")
+    time_label.pack()
+
+    date_label = tk.Label(details_window, text="Date: " + selected_event_data.get("date", ""), bg="black", fg="white")
+    date_label.pack()
+
+    location_label = tk.Label(details_window, text="Location: " + selected_event_data.get("location", ""), bg="black", fg="white")
+    location_label.pack()
 
 
 def open_student_page(username):
